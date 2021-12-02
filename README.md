@@ -11,13 +11,16 @@ In the Splunk UI, click on the Apps dropdown, click "Find More Apps", then searc
 ## Installation and setup
 Install the app by either uploading the tarball or following the Splunkbase prompts.
 
-1. config syslog in NeuVector UI
-goto Settings -> Configuration -> Syslog
-a. set the server value as the IP address that the Splunk is runninng at
-b. choose TCP as the protocol
-c. set port number as 10514
-d. choose Info Level
-e. click SUBMIT to save the setting
+1. config syslog in NeuVector UI  
+
+goto Settings -> Configuration -> Syslog  
+
+  a. set the server value as the IP address that the Splunk is runninng at  
+  b. choose TCP as the protocol  
+  c. set port number as 10514  
+  d. choose Info Level  
+  e. click SUBMIT to save the setting  
+
 ![image of the syslog config](images/syslog-config.png)
 2. You can config multiple nodes to send syslog to your splunk instance and your splunk instance will receive these syslogs in real time.
 ## FAQs
