@@ -1,0 +1,312 @@
+<form version="1.1">
+  <label>NeuVector Dashboard</label>
+  <fieldset submitButton="false"></fieldset>
+  <row>
+    <panel>
+      <chart>
+        <title>Top login users sorted by the number of login attempts</title>
+        <search>
+          <query>index="main" source="tcp:10514" notification=event category=AUTH | top user limit=15 | rename user as "Login User"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="user_login_detail">$click.value$</set>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel>
+      <table>
+        <title>Top login users sorted by the hosts logged in from</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=event category=AUTH
+| stats distinct_count(host) as "Number of the hosts" by user 
+| sort - "Number of the hosts" | rename user as "Login User"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="user_login_detail">$row.Login User$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart id="host_list" depends="$user_login_detail$">
+        <title>The hosts (IP addresses) logged in as "$user_login_detail$"</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=event category=AUTH user="$user_login_detail$"  
+| stats count as "Number of login attempts" by host
+| sort - "Number of login attempts"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <unset token="user_login_detail"></unset>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Failed Login attempts sorted by the number of the hosts</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=event category=AUTH | regex _raw="(Wrong password)|(User[a-zA-Z\s]+failed)"
+| stats distinct_count(host) as "Number of the hosts" by user 
+| sort - "Number of the hosts" | rename user as "Login Users"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="failed_login_detail">$click.value$</set>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart id="failed_login_host_list" depends="$failed_login_detail$">
+        <title>The hosts (IP addresses) that the user "$failed_login_detail$" attempted to login</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=event category=AUTH user="$failed_login_detail$" | regex _raw="(Wrong password)|(User[a-zA-Z\s]+failed)" 
+| stats count as "Number of login attempts" by host
+| sort - "Number of login attempts"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <unset token="failed_login_detail"></unset>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Top vulnerable images</title>
+      <input type="dropdown" token="cvedb_version" searchWhenChanged="true">
+        <label>CVEDB Versions:</label>
+        <prefix>cvedb_version="</prefix>
+        <suffix>"</suffix>
+        <fieldForLabel>cvedb_version</fieldForLabel>
+        <fieldForValue>cvedb_version</fieldForValue>
+        <selectFirstChoice>true</selectFirstChoice>
+        <search>
+          <query>index="main" source="tcp:10514" notification=audit name="Registry.Scan.Report" |stats count by cvedb_version | sort -cvedb_version</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+      </input>
+      <chart>
+        <title>$cvedb_version$</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=audit   name="Registry.Scan.Report" $cvedb_version$  | strcat registry repository _image_repo | strcat registry repository ":" tag image_name
+| eval total_vul_cnt = high_vul_cnt + medium_vul_cnt | dedup image_name
+| chart values(high_vul_cnt) as High, values(medium_vul_cnt) as Medium by image_name
+| sort - Total, high_vul_cnt, medium_vul_cnt</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <eval token="image_repo">mvjoin(mvindex(split($click.value$,":"),0,-2),":")</eval>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart id="scan_detail" depends="$image_repo$">
+        <title>The scan history of the image "$image_repo$" with different tags</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=audit name="Registry.Scan.Report" $cvedb_version$ | strcat registry repository image_name |search image_name=$image_repo$ | dedup tag | eval total_vul_cnt = high_vul_cnt + medium_vul_cnt | timechart values(high_vul_cnt) as High, values(medium_vul_cnt) as Medium by tag</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">0</option>
+        <option name="trellis.size">large</option>
+        <option name="trellis.splitBy">_aggregation</option>
+        <drilldown>
+          <unset token="image_repo"></unset>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Images blocked/alerted by Admission Control</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=audit (name="Admission.Control.Denied" OR name="Admission.Control.Violation") | timechart count by workload_image</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Security events</title>
+        <search>
+          <query>index=main source="tcp:10514" (notification=threat OR notification=incident OR notification=violation)  (level=Warning OR level=Critical) | timechart count by level </query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisY.abbreviation">auto</option>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>List of alerted / blocked network violations</title>
+      <input type="link" token="field1">
+        <label>Choose a view</label>
+        <choice value="chart">Chart</choice>
+        <choice value="table">Table</choice>
+        <default>Chart</default>
+        <change>
+          <condition value="chart">
+            <set token="showChart">true</set>
+            <unset token="showTable"></unset>
+          </condition>
+          <condition value="table">
+            <set token="showTable">true</set>
+            <unset token="showChart"></unset>
+          </condition>
+        </change>
+      </input>
+      <table depends="$showTable$">
+        <title>Pod Services (as a client) connect to the external server IP address(es)</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=violation (policy_action=violate OR policy_action=deny)  server_name=external | eval date = strftime(_time,"%m/%d/%y") | stats values(server_ip) as "Server IP addresses" by client_service, date | sort - date | rename client_service as "Pod Services (as a client)"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+      </table>
+      <table depends="$showTable$">
+        <title>Pod Services (as a server) get connected by the external client IP address(es)</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=violation (policy_action=violate OR policy_action=deny)  client_name=external | eval date = strftime(_time,"%m/%d/%y") | stats values(client_ip) as "Client IP addresses" by server_service, date | sort - date | rename server_service as "Pod Services (as a server)"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+      </table>
+      <chart depends="$showChart$">
+        <title>Pod services (as a client) generating network violations when connect to the external servers</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=violation (policy_action=violate OR policy_action=deny)  server_name=external | stats count as "network violations" by client_service 
+| sort - "network violations" | rename client_service as "Pod Services"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="network_violation_client_service">$click.value$</set>
+        </drilldown>
+      </chart>
+      <table id="External_Server_IP" depends="$network_violation_client_service$">
+        <title>External Server IP addresses connected from the $network_violation_client_service$</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=violation (policy_action=violate OR policy_action=deny)  server_name=external client_service="$network_violation_client_service$" | eval date = strftime(_time,"%Y-%m-%dT%H:%M:%S") | stats values(server_ip) as "Server IP addresses" by date | sort - date</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <unset token="network_violation_client_service"></unset>
+        </drilldown>
+      </table>
+      <chart depends="$showChart$">
+        <title>Pod Services (as a server) generating network violations when get connected from the external clients</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=violation (policy_action=violate OR policy_action=deny)  client_name=external | stats count as "network violations" by server_service 
+|  sort - "network violations" | rename server_service as "Pod Services"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisY.scale">log</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="network_violation_server_service">$click.value$</set>
+        </drilldown>
+      </chart>
+      <table id="External_Client_IP" depends="$network_violation_server_service$">
+        <title>External Client IP addresses connected to the $network_violation_server_service$</title>
+        <search>
+          <query>index=main source="tcp:10514" notification=violation (policy_action=violate OR policy_action=deny)  client_name=external server_service="$network_violation_server_service$" | eval date = strftime(_time,"%Y-%m-%dT%H:%M:%S") | stats values(client_ip) as "Client IP addresses" by date | sort - date</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <unset token="network_violation_server_service"></unset>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>
