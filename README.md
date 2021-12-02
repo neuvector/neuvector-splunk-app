@@ -1,6 +1,6 @@
 ## Getting the app
 ### GitHub
-Download the latest app tarball (`neuvector_app.tar.gz`) from the [neuvector/neuvector-splunk-app repository](https://github.com/neuvector/neuvector-splunk-app).
+Download the latest app tarball (`neuvector_app.tar.gz`) from the [neuvector/neuvector-splunk-app repository](https://github.com/neuvector/neuvector-splunk-app/releases).
 
 ### Splunkbase
 Download the latest app tarball from [Splunkbase](https://splunkbase.splunk.com/app/6205).
