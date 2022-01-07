@@ -30,5 +30,8 @@ Any user role.
 
 ## Change notes
 
+### January 06, 2021 - v1.1.0
+- add east-west network violations 
+
 ### December 01, 2021 - v1.0.0
 - add NeuVector dashboard
