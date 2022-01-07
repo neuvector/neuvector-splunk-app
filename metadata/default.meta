@@ -33,30 +33,3 @@ export = system
 [viewstates]
 access = read : [ * ], write : [ * ]
 export = system
-
-[app/ui]
-version = 8.2.0
-modtime = 1633544304.631034000
-
-[app/launcher]
-version = 8.2.0
-modtime = 1633544304.632827000
-
-[views/neuvector_dashboard]
-access = read : [ * ], write : [ admin ]
-export = none
-owner = admin
-version = 8.2.0
-modtime = 1638381845.464655000
-
-[nav/default]
-access = read : [ * ], write : [ admin ]
-export = none
-owner = nobody
-version = 8.2.0
-modtime = 1635206711.195483000
-
-[indexes/neuvector]
-owner = admin
-version = 8.2.0
-modtime = 1638213383.395366000
