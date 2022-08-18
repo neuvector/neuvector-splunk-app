@@ -22,11 +22,28 @@ goto Settings -> Configuration -> Syslog
   e. click SUBMIT to save the setting  
 
 ![image of the syslog config](images/syslog-config.png)
+
 2. You can config multiple nodes to send syslog to your splunk instance and your splunk instance will receive these syslogs in real time.
 ## FAQs
 ### What user role is required?
 Any user role.
 
+## Screenshots
+
+### Image Vulnerabilities
+![Image Vulnerabilities](images/vulnerable_images.png)
+
+### Admission Control and Security Events
+![Admission Control and Security Events](images/admission_security_events.png)
+
+### Network Violations by Pod/Service (Deployments)
+![Network Violations by Pod/Service (Deployments)](images/network_violations.png)
+
+### Egress Connection Summary
+![Egress Connection Summary](images/egress_destinations.png)
+
+### NeuVector Login Activity Dashboard
+![NeuVector Login Activity Dashboard](images/login_summary.png)
 
 ## Change notes
 
